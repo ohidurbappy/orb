@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      # Sanity-gate the release on green tests + types.
+      - run: bun run typecheck
+      - run: bun test
+
+      # Bun cross-compiles every target from this one Linux runner.
+      - name: Build all targets
+        run: bun run build
+
+      - name: Generate checksums
+        working-directory: dist
+        run: sha256sum orb-* > checksums.txt
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            dist/orb-* dist/checksums.txt

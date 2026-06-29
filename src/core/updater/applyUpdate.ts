@@ -11,11 +11,24 @@ export interface ApplyOutcome {
   to?: string;
 }
 
+/** Phases an update goes through, reported via the optional progress callback. */
+export interface UpdateProgress {
+  phase: 'checking' | 'downloading' | 'installing';
+  /** Total download size in bytes, known once the release asset is resolved. */
+  totalBytes?: number;
+}
+
+export type ProgressFn = (progress: UpdateProgress) => void;
+
 /**
  * Download the release asset for this platform and atomically replace the
- * running binary. Returns a structured outcome; never throws.
+ * running binary. Returns a structured outcome; never throws. `onProgress` is
+ * called as the update moves through its phases so the UI can reflect them.
  */
-export async function applyUpdate(fetchFn: typeof fetch = fetch): Promise<ApplyOutcome> {
+export async function applyUpdate(
+  fetchFn: typeof fetch = fetch,
+  onProgress: ProgressFn = () => {},
+): Promise<ApplyOutcome> {
   if (!isCompiled()) {
     return {
       status: 'unsupported',
@@ -23,6 +36,7 @@ export async function applyUpdate(fetchFn: typeof fetch = fetch): Promise<ApplyO
     };
   }
 
+  onProgress({ phase: 'checking' });
   const result = await checkForUpdate(fetchFn);
   if (!result.hasUpdate || !result.latest) {
     return { status: 'up-to-date', message: `Already on the latest version (${result.current}).` };
@@ -37,6 +51,7 @@ export async function applyUpdate(fetchFn: typeof fetch = fetch): Promise<ApplyO
   }
 
   try {
+    onProgress({ phase: 'downloading', totalBytes: asset.size });
     const res = await fetchFn(asset.browser_download_url, {
       headers: { 'User-Agent': `orb/${result.current}`, Accept: 'application/octet-stream' },
     });
@@ -47,6 +62,7 @@ export async function applyUpdate(fetchFn: typeof fetch = fetch): Promise<ApplyO
     // to the raw executable before swapping it in.
     const bytes = gunzipSync(Buffer.from(await res.arrayBuffer()));
 
+    onProgress({ phase: 'installing' });
     const target = process.execPath;
     const tmp = `${target}.new`;
     writeFileSync(tmp, bytes);

@@ -48,13 +48,18 @@ sudo mv orb /usr/local/bin/orb
 ## Usage
 
 ```sh
-orb            # interactive menu: type to fuzzy-search, ↑/↓ to move, Enter to run, Esc to quit
-orb ip         # print local IP address(es)
-orb sysinfo    # neofetch-style system info
-orb update     # download & install the latest release
+orb                  # interactive menu: type to fuzzy-search, ↑/↓ to move, Enter to run, Esc to quit
+orb ip               # list local interface addresses
+orb ip --local       # just the LAN IPv4, plain — e.g. IP=$(orb ip --local)
+orb ip --public      # your public IP (looked up via an external service)
+orb sysinfo          # neofetch-style system info
+orb update           # download & install the latest release
 orb --help
 orb --version
 ```
+
+`orb ip --local` (`-l`) and `--public` (`-p`) print a bare address with no UI
+chrome, so they're safe to capture in scripts.
 
 orb checks GitHub for a newer release on startup (and every 10 minutes while the menu
 is open). When one is found it shows a banner; run `orb update` to self-replace the

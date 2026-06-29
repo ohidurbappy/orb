@@ -29,6 +29,17 @@ describe('parseArgs', () => {
   it('keeps commandArgs empty when only the command is given', () => {
     expect(parseArgs(['ip']).commandArgs).toEqual([]);
   });
+
+  it('forwards flags after the command to commandArgs', () => {
+    const parsed = parseArgs(['ip', '--public']);
+    expect(parsed.commandName).toBe('ip');
+    expect(parsed.commandArgs).toEqual(['--public']);
+  });
+
+  it('still treats -h/-v as global, even after a command', () => {
+    expect(parseArgs(['ip', '--help']).help).toBe(true);
+    expect(parseArgs(['ip', '-v']).version).toBe(true);
+  });
 });
 
 describe('findCommand', () => {

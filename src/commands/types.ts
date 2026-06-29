@@ -28,6 +28,14 @@ export interface Command {
   /** Ink component rendered when the command runs. */
   Component: ComponentType<CommandProps>;
   /**
+   * Optional plain-text handler for one-shot, script-friendly invocations (e.g.
+   * `orb ip --local`). Return a string to print to stdout and skip Ink entirely
+   * — no menu chrome, no update banner — or null to fall through to the Ink
+   * `Component`. Throw to print the message to stderr and exit non-zero. Only
+   * consulted for one-shot CLI runs, never from the interactive menu.
+   */
+  run?(args: string[], input?: string): string | null | Promise<string | null>;
+  /**
    * When true the component drives its own exit (async work, interactivity) and
    * the one-shot runner will not auto-exit after first paint. Defaults to false
    * for simple print-and-exit commands like `ip` and `sysinfo`.

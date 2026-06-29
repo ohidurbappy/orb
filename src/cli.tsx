@@ -22,10 +22,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') help = true;
     else if (arg === '--version' || arg === '-v') version = true;
-    else if (!arg.startsWith('-')) {
-      if (!commandName) commandName = arg;
-      else commandArgs.push(arg);
-    }
+    else if (!commandName && !arg.startsWith('-')) commandName = arg;
+    // Everything after the command name — positionals AND flags like `--public`
+    // — is forwarded to the command so it can parse its own options.
+    else commandArgs.push(arg);
   }
 
   return { commandName, commandArgs, help, version };
@@ -91,6 +91,24 @@ async function main(): Promise<void> {
     const wantsStdin =
       command.readsStdin && commandArgs.length === 0 && !process.stdin.isTTY;
     const input = wantsStdin ? await readStdin() : undefined;
+
+    // Plain-output handler (e.g. `orb ip --local`): print to stdout and skip Ink
+    // entirely — no menu chrome, no update banner — so the output is pipeable.
+    if (command.run) {
+      try {
+        const out = await command.run(commandArgs, input);
+        if (out !== null) {
+          console.log(out);
+          spawnBackgroundRefresh();
+          return;
+        }
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exitCode = 1;
+        return;
+      }
+    }
+
     const app = render(<App command={command} args={commandArgs} input={input} />);
     await app.waitUntilExit();
     // Refresh the update cache for next time without blocking this run.

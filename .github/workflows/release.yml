@@ -31,11 +31,18 @@ jobs:
         working-directory: dist
         run: sha256sum orb-* > checksums.txt
 
-      - name: Create GitHub release
+      - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --generate-notes \
-            dist/orb-* dist/checksums.txt
+          # Idempotent: re-running a tag should refresh assets, not fail on a
+          # release that already exists.
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" \
+              dist/orb-* dist/checksums.txt --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --generate-notes \
+              dist/orb-* dist/checksums.txt
+          fi

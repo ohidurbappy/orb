@@ -52,6 +52,8 @@ orb                  # interactive menu: type to fuzzy-search, ↑/↓ to move, 
 orb ip               # list local interface addresses
 orb ip --local       # just the LAN IPv4, plain — e.g. IP=$(orb ip --local)
 orb ip --public      # your public IP (looked up via an external service)
+orb serve            # serve the current directory over HTTP (default port 8000)
+orb serve 8080       # …on a specific port; prints the LAN URL + a QR to scan
 orb sysinfo          # neofetch-style system info
 orb update           # download & install the latest release
 orb --help

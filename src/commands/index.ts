@@ -1,6 +1,7 @@
 import type { Command } from './types.js';
 import { ipCommand } from './ip/index.js';
 import { qrCommand } from './qr/index.js';
+import { serveCommand } from './serve/index.js';
 import { sysinfoCommand } from './sysinfo/index.js';
 import { updateCommand } from './update/index.js';
 
@@ -9,7 +10,13 @@ import { updateCommand } from './update/index.js';
  * and they automatically appear in `--help`, the interactive menu, and CLI
  * dispatch.
  */
-export const COMMANDS: Command[] = [ipCommand, qrCommand, sysinfoCommand, updateCommand];
+export const COMMANDS: Command[] = [
+  ipCommand,
+  qrCommand,
+  serveCommand,
+  sysinfoCommand,
+  updateCommand,
+];
 
 /** Resolve a command by its name or one of its aliases. */
 export function findCommand(name: string): Command | undefined {

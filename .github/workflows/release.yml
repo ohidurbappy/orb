@@ -1,12 +1,21 @@
 name: Release
 
+# Every push to main cuts a release. The version is derived from version.txt
+# (MAJOR.MINOR) with the workflow run number as the patch, so each release is a
+# strictly-increasing semver without anyone bumping a file by hand. Bump
+# MAJOR/MINOR by editing version.txt.
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
+
+# Serialize releases so two quick pushes don't race on tag/asset creation.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -23,26 +32,41 @@ jobs:
       - run: bun run typecheck
       - run: bun test
 
-      # Bun cross-compiles every target from this one Linux runner.
+      # version.txt holds MAJOR.MINOR(.PATCH); patch is replaced by the run
+      # number. The binary inlines version.txt at build time (src/core/version.ts),
+      # so the compiled version always matches the release tag.
+      - name: Compute version
+        id: version
+        run: |
+          base="$(tr -d '[:space:]' < version.txt)"
+          major_minor="$(echo "$base" | cut -d. -f1,2)"
+          full="${major_minor}.${GITHUB_RUN_NUMBER}"
+          printf '%s\n' "$full" > version.txt
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$full"
+
+      # Bun cross-compiles every target from this one Linux runner and gzips
+      # each binary (see scripts/build.ts).
       - name: Build all targets
         run: bun run build
 
       - name: Generate checksums
         working-directory: dist
-        run: sha256sum orb-* > checksums.txt
+        run: sha256sum *.gz > checksums.txt
 
-      - name: Create or update GitHub release
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ steps.version.outputs.full }}
         run: |
-          # Idempotent: re-running a tag should refresh assets, not fail on a
-          # release that already exists.
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" \
-              dist/orb-* dist/checksums.txt --clobber
+          # Idempotent: a re-run reuses the run number (same tag), so refresh
+          # assets instead of failing on an existing release.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.gz dist/checksums.txt --clobber
           else
-            gh release create "${GITHUB_REF_NAME}" \
-              --title "${GITHUB_REF_NAME}" \
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "$TAG" \
               --generate-notes \
-              dist/orb-* dist/checksums.txt
+              dist/*.gz dist/checksums.txt
           fi

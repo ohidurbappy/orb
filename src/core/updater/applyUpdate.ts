@@ -1,4 +1,5 @@
 import { chmodSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { checkForUpdate } from './checkForUpdate.js';
 import { findAsset } from './assets.js';
 import { isCompiled } from './refresh.js';
@@ -42,7 +43,9 @@ export async function applyUpdate(fetchFn: typeof fetch = fetch): Promise<ApplyO
     if (!res.ok) {
       return { status: 'error', message: `Download failed: HTTP ${res.status}` };
     }
-    const bytes = Buffer.from(await res.arrayBuffer());
+    // Release assets are gzipped to cut download size (~62%); decompress back
+    // to the raw executable before swapping it in.
+    const bytes = gunzipSync(Buffer.from(await res.arrayBuffer()));
 
     const target = process.execPath;
     const tmp = `${target}.new`;

@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 
 interface Target {
   /** Bun cross-compile target triple. */
@@ -32,6 +33,12 @@ for (const target of targets) {
       'build',
       'src/cli.tsx',
       '--compile',
+      // Minify the bundled JS before it's embedded in the binary. This is the
+      // only safe size/startup lever here: `--bytecode` can't compile a
+      // dependency (yoga-layout), and forcing React into production mode
+      // (NODE_ENV=production) breaks `react/jsx-runtime` resolution under
+      // `--compile`, producing a binary that throws at startup.
+      '--minify',
       `--target=${target.bun}`,
       `--outfile=dist/${target.out}`,
     ],
@@ -40,7 +47,17 @@ for (const target of targets) {
   if (result.status !== 0) {
     console.error(`✗ failed: ${target.out}`);
     failures++;
+    continue;
   }
+
+  // Ship gzipped binaries: ~62% smaller downloads. The on-disk binary is
+  // unchanged after the updater gunzips it (see applyUpdate.ts). The asset
+  // name must match `assetNameFor` in src/core/updater/assets.ts.
+  const binPath = `dist/${target.out}`;
+  const gzPath = `${binPath}.gz`;
+  writeFileSync(gzPath, gzipSync(readFileSync(binPath), { level: 9 }));
+  const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
+  console.log(`  ↳ gzip ${target.out}.gz (${mb(statSync(binPath).size)} → ${mb(statSync(gzPath).size)} MB)`);
 }
 
 if (failures > 0) {

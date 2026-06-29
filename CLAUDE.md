@@ -44,6 +44,8 @@ built with Ink (React + TypeScript) and compiled to standalone binaries with Bun
   break the command the user actually ran.
 - Asset names in `src/core/updater/assets.ts` must match the output names in
   `scripts/build.ts` and the files uploaded by `.github/workflows/release.yml`.
+  Release assets are **gzipped** (`<name>.gz`); `scripts/build.ts` gzips each
+  compiled binary and `applyUpdate` gunzips on download.
 
 ## Commands
 
@@ -56,7 +58,12 @@ bun run build       # cross-compile all targets
 
 ## Release
 
-Push a `vX.Y.Z` tag. `release.yml` runs typecheck + tests, cross-compiles all
-targets on one runner, generates `checksums.txt`, and creates the GitHub release.
-Bump `version` in `package.json` first — it's the version compiled into the binary
-(`src/core/version.ts`).
+**Every push to `main` cuts a release** (`.github/workflows/release.yml`): it runs
+typecheck + tests, cross-compiles all targets on one runner, gzips them, generates
+`checksums.txt`, and creates the GitHub release.
+
+Versioning is automatic. `version.txt` is the single source of truth and is inlined
+into the binary at build time (`src/core/version.ts`). CI takes its `MAJOR.MINOR`
+and uses the workflow run number as the patch (`MAJOR.MINOR.<run>`), so every push
+ships a strictly-increasing semver — no manual bump needed. To start a new
+major/minor series, edit `version.txt`.

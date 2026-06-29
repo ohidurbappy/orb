@@ -5,24 +5,45 @@ binary, one update mechanism, and one consistent UI (built with [Ink](https://gi
 
 ## Install
 
-Download the binary for your platform from the
-[latest release](https://github.com/ohidurbappy/orb/releases/latest), make it
-executable, and put it on your `PATH`:
+**macOS / Linux** — paste into your terminal:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ohidurbappy/orb/main/install.sh | sh
+```
+
+**Windows** — paste into PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ohidurbappy/orb/main/install.ps1 | iex
+```
+
+The installer detects your platform, downloads the latest release, and installs
+it as `orb` on your `PATH`. Override the location with `ORB_INSTALL_DIR` if you
+like. Re-run it any time to upgrade (or use `orb update`).
+
+<details>
+<summary>Manual install</summary>
+
+Grab the `.gz` asset for your platform from the
+[latest release](https://github.com/ohidurbappy/orb/releases/latest), decompress
+it, mark it executable, and put it on your `PATH`:
 
 ```sh
 # example: macOS arm64
-curl -L -o orb https://github.com/ohidurbappy/orb/releases/latest/download/orb-darwin-arm64
+curl -fsSL https://github.com/ohidurbappy/orb/releases/latest/download/orb-darwin-arm64.gz | gunzip > orb
 chmod +x orb
 sudo mv orb /usr/local/bin/orb
 ```
 
-| Platform      | Asset                   |
-| ------------- | ----------------------- |
-| macOS (Apple) | `orb-darwin-arm64`      |
-| macOS (Intel) | `orb-darwin-x64`        |
-| Linux x64     | `orb-linux-x64`         |
-| Linux arm64   | `orb-linux-arm64`       |
-| Windows x64   | `orb-windows-x64.exe`   |
+| Platform      | Asset                      |
+| ------------- | -------------------------- |
+| macOS (Apple) | `orb-darwin-arm64.gz`      |
+| macOS (Intel) | `orb-darwin-x64.gz`        |
+| Linux x64     | `orb-linux-x64.gz`         |
+| Linux arm64   | `orb-linux-arm64.gz`       |
+| Windows x64   | `orb-windows-x64.exe.gz`   |
+
+</details>
 
 ## Usage
 

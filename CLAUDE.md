@@ -62,8 +62,8 @@ bun run build       # cross-compile all targets
 typecheck + tests, cross-compiles all targets on one runner, gzips them, generates
 `checksums.txt`, and creates the GitHub release.
 
-Versioning is automatic. `version.txt` is the single source of truth and is inlined
-into the binary at build time (`src/core/version.ts`). CI takes its `MAJOR.MINOR`
-and uses the workflow run number as the patch (`MAJOR.MINOR.<run>`), so every push
-ships a strictly-increasing semver — no manual bump needed. To start a new
-major/minor series, edit `version.txt`.
+Versioning is automatic. `package.json`'s `version` is the single source of truth
+and is inlined into the binary at build time (`src/core/version.ts`). CI takes its
+`MAJOR.MINOR` and uses the workflow run number as the patch (`MAJOR.MINOR.<run>`),
+so every push ships a strictly-increasing semver — no manual bump needed. To start
+a new major/minor series, edit `version` in `package.json`.

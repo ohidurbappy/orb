@@ -1,9 +1,9 @@
 name: Release
 
-# Every push to main cuts a release. The version is derived from version.txt
+# Every push to main cuts a release. The version is derived from package.json
 # (MAJOR.MINOR) with the workflow run number as the patch, so each release is a
 # strictly-increasing semver without anyone bumping a file by hand. Bump
-# MAJOR/MINOR by editing version.txt.
+# MAJOR/MINOR by editing the `version` field in package.json.
 on:
   push:
     branches:
@@ -32,16 +32,17 @@ jobs:
       - run: bun run typecheck
       - run: bun test
 
-      # version.txt holds MAJOR.MINOR(.PATCH); patch is replaced by the run
-      # number. The binary inlines version.txt at build time (src/core/version.ts),
+      # package.json holds MAJOR.MINOR(.PATCH); patch is replaced by the run
+      # number. The binary inlines package.json at build time (src/core/version.ts),
       # so the compiled version always matches the release tag.
       - name: Compute version
         id: version
         run: |
-          base="$(tr -d '[:space:]' < version.txt)"
+          base="$(jq -r .version package.json)"
           major_minor="$(echo "$base" | cut -d. -f1,2)"
           full="${major_minor}.${GITHUB_RUN_NUMBER}"
-          printf '%s\n' "$full" > version.txt
+          jq --arg v "$full" '.version = $v' package.json > package.json.tmp
+          mv package.json.tmp package.json
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "Releasing v$full"
 
